@@ -78,7 +78,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'my_cloud_app', # Имя базы данных
         'USER': 'postgres',      # Имя пользователя
-        'PASSWORD': 'endOFtime', # Пароль от пользователя postgres
+        'PASSWORD': '', # Пароль от пользователя postgres
         'HOST': 'localhost',
         'PORT': '5432',
     }
