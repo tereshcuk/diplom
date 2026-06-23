@@ -7,17 +7,6 @@ from django.utils import timezone
 
 # Create your models here.
 
-	# Таблица users: 
- # id (PK), 
- # username (уникальный, валидация), 
- # full_name, 
- # email (уникальный), 
- # password_hash, 
- # is_admin (boolean), 
- # storage_path (путь к папке пользователя).
- 
-# users/models.py
-
 class User(models.Model):
        
     full_name = models.CharField(
@@ -78,7 +67,7 @@ class User(models.Model):
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
         
-# api/models.py (или files/models.py)
+
 
 class File(models.Model):
     '''
@@ -154,9 +143,9 @@ class File(models.Model):
         help_text='Уникальная ссылка для скачивания файла без авторизации',
     )
 
-    # def __str__(self):
-    #     return f'Файл '{self.original_name}' пользователя {self.user.username}'
+    def __str__(self):
+        return f'Файл: {self.original_name} пользователя: {self.user.username}'
 
-    # class Meta:
-    #     verbose_name = 'Файл'
-    #     verbose_name_plural = 'Файлы' 
+    class Meta:
+        verbose_name = 'Файл'
+        verbose_name_plural = 'Файлы' 
