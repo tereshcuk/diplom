@@ -7,7 +7,22 @@ from django.utils import timezone
 
 # Create your models here.
 
-class User(models.Model):
+class User(AbstractUser):
+    
+    groups = models.ManyToManyField(
+        'auth.Group',
+        related_name='app_users',  # Уникальное имя для обратной связи
+        blank=True,
+        help_text='The groups this user belongs to. A user will get all permissions granted to each of their groups.',
+        verbose_name='groups'
+    )
+    user_permissions = models.ManyToManyField(
+        'auth.Permission',
+        related_name='app_users',  # Уникальное имя для обратной связи
+        blank=True,
+        help_text='Specific permissions for this user.',
+        verbose_name='user permissions'
+    )
        
     full_name = models.CharField(
         'Полное имя',
@@ -69,10 +84,9 @@ class User(models.Model):
         
 
 
-class File(models.Model):
-    '''
-    Модель для хранения информации о файлах пользователей.
-    '''
+class File(models.Model):    
+   
+    # file = models.FileField(upload_to='uploads/')    
 
     # Связь с пользователем-владельцем. При удалении пользователя все его файлы будут удалены.
     user = models.ForeignKey(
@@ -140,7 +154,7 @@ class File(models.Model):
         default=uuid.uuid4,
         editable=False,
         unique=True,
-        help_text='Уникальная ссылка для скачивания файла без авторизации',
+        help_text='Уникальная ссылка для скачивания файла',
     )
 
     def __str__(self):

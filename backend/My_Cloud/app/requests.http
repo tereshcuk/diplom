@@ -1,0 +1,41 @@
+get http://127.0.0.1:8000/api/v1/users/
+Content-Type: application/json
+Authorization: Token 70cc3c7f718950ca3138c74d7ec04d2b0bfcce41
+
+###
+get http://127.0.0.1:8000/api/v1/users/7/
+Content-Type: application/json
+Authorization: Token 70cc3c7f718950ca3138c74d7ec04d2b0bfcce41
+
+
+###
+get http://127.0.0.1:8000/api/v1/files/
+Content-Type: application/json
+Authorization: Token 70cc3c7f718950ca3138c74d7ec04d2b0bfcce41
+
+###
+post http://127.0.0.1:8000/api/v1/login/
+Content-Type: application/json
+
+{
+    "username": "admin",
+    "password": "admin"
+}
+
+###
+post http://127.0.0.1:8000/api/v1/logout/
+Authorization: Token ad7e398ef72fe7e6f0d6de41fbe595a8ad07da64
+credentials: 'include' 
+
+###
+post http://127.0.0.1:8000/api/v1/register/
+Content-Type: application/json
+
+{
+    "username": "test2",
+    "email": "test2@yandex.ru",
+    "password": "123456",
+    "full_name": "Тест2",
+    "is_admin": false,
+    "storage_path": "/test2/"
+}
