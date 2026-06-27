@@ -1,9 +1,17 @@
+
+# Пользователи
+
 get http://127.0.0.1:8000/api/v1/users/
+Content-Type: application/json
+Authorization: Token 4d53c2a6481f51483ba751d694734cc227269068
+
+###
+get http://127.0.0.1:8000/api/v1/users/7/
 Content-Type: application/json
 Authorization: Token 70cc3c7f718950ca3138c74d7ec04d2b0bfcce41
 
 ###
-get http://127.0.0.1:8000/api/v1/users/7/
+DELETE http://127.0.0.1:8000/api/v1/users/7/
 Content-Type: application/json
 Authorization: Token 70cc3c7f718950ca3138c74d7ec04d2b0bfcce41
 
@@ -18,24 +26,107 @@ post http://127.0.0.1:8000/api/v1/login/
 Content-Type: application/json
 
 {
-    "username": "admin",
-    "password": "admin"
+    "username": "test3",
+    "password": "123456"
 }
 
 ###
 post http://127.0.0.1:8000/api/v1/logout/
 Authorization: Token ad7e398ef72fe7e6f0d6de41fbe595a8ad07da64
-credentials: 'include' 
+credentials: "include" 
 
 ###
 post http://127.0.0.1:8000/api/v1/register/
 Content-Type: application/json
 
 {
-    "username": "test2",
-    "email": "test2@yandex.ru",
+    "username": "test3",
+    "email": "test3@yandex.ru",
     "password": "123456",
-    "full_name": "Тест2",
+    "full_name": "Тест3",
     "is_admin": false,
-    "storage_path": "/test2/"
+    "storage_path": "/test3/"
 }
+
+
+# Файлы
+# получение списка файлов пользователя. Для админов — с параметром ?user_id=
+###
+get http://127.0.0.1:8000/api/v1/files/
+Content-Type: application/json
+Authorization: Token 70cc3c7f718950ca3138c74d7ec04d2b0bfcce41
+
+###
+get http://127.0.0.1:8000/api/v1/files/?user=9
+Content-Type: application/json
+Authorization: Token 70cc3c7f718950ca3138c74d7ec04d2b0bfcce41
+
+###
+get http://127.0.0.1:8000/api/v1/files/1/
+Content-Type: application/json
+Authorization: Token 70cc3c7f718950ca3138c74d7ec04d2b0bfcce41
+
+###
+get http://127.0.0.1:8000/api/v1/files/get_file_path/
+Content-Type: application/json
+Authorization: Token 4d53c2a6481f51483ba751d694734cc227269068
+
+
+#Загрузить файл
+###
+curl -X POST http://127.0.0.1:8000/api/v1/files/ \
+-H "Authorization: Token 4d53c2a6481f51483ba751d694734cc227269068" \
+-F "file=@D:/test.txt" \
+-F "original_name=test.txt"
+
+# Удаление файла 
+###
+DELETE http://127.0.0.1:8000/api/v1/files/1/
+Content-Type: application/json
+Authorization: Token 4d53c2a6481f51483ba751d694734cc227269068
+
+###
+curl -X DELETE http://127.0.0.1:8000/api/v1/files/2/ \
+     -H "Authorization: Token 4d53c2a6481f51483ba751d694734cc227269068"
+
+
+# Переименовать файл
+###
+put http://127.0.0.1:8000/api/v1/files/2/rename/
+Content-Type: application/json
+Authorization: Token 70cc3c7f718950ca3138c74d7ec04d2b0bfcce41 
+
+{
+    "original_name": "Мой отчет.pdf"
+}
+
+
+###
+curl -X PUT http://127.0.0.1:8000/api/v1/files/2/rename/ \
+     -H "Authorization: Token 70cc3c7f718950ca3138c74d7ec04d2b0bfcce41" \
+     -H "Content-Type: application/json" \
+     -d '{"original_name": "Новое имя файла.txt"}'
+
+
+# Добавление комментария
+###
+put http://127.0.0.1:8000/api/v1/files/2/comment/
+Content-Type: application/json
+Authorization: Token 70cc3c7f718950ca3138c74d7ec04d2b0bfcce41 
+
+{
+    "comment": "Мой отчет.pdf - Это супер"
+}
+
+
+
+# Скачать файл по id
+###
+GET http://127.0.0.1:8000/api/v1/files/2/download/
+Content-Type: application/json
+Authorization: Token 4d53c2a6481f51483ba751d694734cc227269068
+
+# Скачать файл по публичной ссылке
+###
+GET http://127.0.0.1:8000/files/8b40df5e-1539-42fb-94d8-85c5f444bf98/
+Content-Type: application/json

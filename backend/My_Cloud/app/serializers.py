@@ -41,20 +41,52 @@ class LoginSerializer(serializers.Serializer):
             return {'user': user}
         raise serializers.ValidationError("Неверные учетные данные")
     
+# class FileSerializer(serializers.ModelSerializer):
+    
+#     file_path = serializers.SerializerMethodField()
+    
+#     class Meta:
+#         model = File
+#         fields = (
+#             'id', 'original_name', 'user', 'unique_name', 
+#             'file_path', 'file_size', 'upload_date', 
+#             'last_download_date', 'comment', 'public_link'
+#             )
+          
+    
+#     def get_file_path(self, obj):
+#         request = self.context.get('request')
+#         file_url = obj.file.url
+#         return request.build_absolute_uri(file_url) if request else file_url
+# app/serializers.py
+
 class FileSerializer(serializers.ModelSerializer):
-    # file_url = serializers.SerializerMethodField()
-    file_path = serializers.SerializerMethodField()
+        
+    file = serializers.FileField(write_only=True)
+    # original_name = serializers.CharField()
     
     class Meta:
         model = File
-        # fields = ('id', 'file', 'file_url', 'created_at', 'unique_link')
-        fields = ('id','original_name', 'user', 'unique_name', 'file_path', 'file_size', 'upload_date', 'last_download_date', 'comment', 'public_link')
+        fields = ('id', 'user', 'unique_name',
+             'original_name', 'file', 'file_size', 'upload_date', 
+            'last_download_date', 'comment', 'public_link'
+        )
+        read_only_fields = ['id', 'user', 'unique_name', 'file_size'] # Эти поля заполнятся автоматически
         
-    # def get_file_url(self, obj):
-    def get_file_path(self, obj):
-        request = self.context.get('request')
-        # return request.build_absolute_uri(obj.file.url) if request else obj.file.url
-        return request.build_absolute_uri(obj.original_name) if request else obj.original_name
+
+class RenameSerializer(serializers.Serializer):
+    """
+    Сериализатор для изменения имени файла.
+    """
+    original_name = serializers.CharField(max_length=255)    
+        
+
+class CommentSerializer(serializers.Serializer):
+    """
+    Сериализатор для обновления комментария к файлу.
+    """
+    comment = serializers.CharField(allow_blank=True) # allow_blank разрешает пустые комментарии
+
 
 class FileUploadSerializer(serializers.ModelSerializer):
     class Meta:

@@ -1,45 +1,31 @@
-# from django.shortcuts import render
-# from rest_framework.decorators import api_view
-# from rest_framework.response import Response
 
-# from rest_framework.permissions import IsAuthenticated
-# from rest_framework.throttling import AnonRateThrottle
-# from rest_framework.viewsets import ModelViewSet
-
-# from .models import User
-# from .serializers import UserSerializer
-# from .permissions import IsOwnerOrReadOnly
-# from rest_framework.views import APIView
-# from rest_framework.generics import ListAPIView, RetrieveAPIView
-
-
-
-# class UsersViewSet(ModelViewSet):
-#     queryset = User.objects.all()
-#     serializer_class = UserSerializer
-#     # permission_classes = [IsOwnerOrReadOnly]
-#     # throttle_classes = [AnonRateThrottle]
-
-#     # def perform_create(self, serializer):
-#     #     serializer.save(user = self.request.user)
-   
 from rest_framework import viewsets, status, generics, permissions as drf_permissions
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token 
-from django.views.decorators.csrf import ensure_csrf_cookie
+# from django.views.decorators.csrf import ensure_csrf_cookie
 from django.contrib.auth import login as django_login, logout as django_logout, authenticate, get_user_model
 
 from .models import File, User
-from .serializers import UserSerializer, RegisterSerializer, LoginSerializer, FileSerializer, FileUploadSerializer
+from .serializers import UserSerializer, RegisterSerializer, LoginSerializer, FileSerializer, RenameSerializer, CommentSerializer
 from .permissions import IsAdminUser, IsOwnerOrAdmin
 
-from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import csrf_exempt
+# from django.utils.decorators import method_decorator
+# from django.views.decorators.csrf import csrf_exempt
 from .authentication import CsrfExemptSessionAuthentication # Импортируем наш класс
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import AllowAny
+from rest_framework.views import APIView
+from wsgiref.util import FileWrapper
+import os
+from django.http import HttpResponse
+from django.utils import timezone
+from django_filters.rest_framework import DjangoFilterBackend # Импорт фильтра
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser 
+from rest_framework.decorators import parser_classes as dec_parser_classes, action
 
-# ViewSet для управления пользователями (админами)
+
+
+# ViewSet для управления пользователями 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -53,20 +39,26 @@ class UserViewSet(viewsets.ModelViewSet):
             permission_classes = [IsAdminUser]
         return [permission() for permission in permission_classes]
 
-# ViewSet для файлов с кастомной логикой доступа и загрузки
+# ViewSet для файлов 
 class FileViewSet(viewsets.ModelViewSet):
-    # Используем разные сериализаторы для чтения/записи, если это требуется
-    # Для простоты оставим один. Если нужен другой для создания - переопределите метод get_serializer_class().
-    serializer_class = FileSerializer
+    
+    queryset = File.objects.all()
+    serializer_class = FileSerializer  
+    
+    parser_classes = [MultiPartParser, FormParser, JSONParser]    
+    filter_backends = [DjangoFilterBackend]    
+    filterset_fields = ['user'] 
 
     def get_queryset(self):
         """
         Пользователь видит только свои файлы. Админ видит все.
         """
-        user = self.request.user
+        user = self.request.user             
+        
         if user.is_staff:
             return File.objects.all()
-        return File.objects.filter(owner = user)
+        
+        return File.objects.filter(user = user)
     
     def get_permissions(self):
         """
@@ -84,11 +76,144 @@ class FileViewSet(viewsets.ModelViewSet):
             
         return [permission() for permission in permission_classes]
     
+    
     def perform_create(self, serializer):
+        
+        uploaded_file = self.request.data.get('file')        
+        instance = serializer.save(user=self.request.user)
+        if uploaded_file:
+            # Размер файла в байтах
+            file_size = uploaded_file.size
+            
+            # Вычисляем оригинальное имя 
+            original_name = uploaded_file.name
+            
+            # Обновляем объект
+            instance.file_size = file_size
+            instance.original_name = original_name
+            instance.save(update_fields=['file_size', 'original_name'])
+     
+            
+    @action(detail=True, methods=['put'])      
+    def rename(self, request, pk=None):
         """
-        Автоматически присваиваем владельца (текущего пользователя) при создании файла.
+        Переименовывает файл.
+        Ожидает JSON-объект: {"original_name": "Новое имя файла.txt"}
         """
-        serializer.save(owner=self.request.user)
+        file_obj = self.get_object() # Получаем объект по id (pk)
+        
+        # Сериализатор для валидации входящих данных
+        new_name_serializer = RenameSerializer(data=request.data)
+        new_name_serializer.is_valid(raise_exception=True)
+
+        # Обновляем поле original_name
+        file_obj.original_name = new_name_serializer.validated_data['original_name']
+        file_obj.save(update_fields=['original_name'])
+
+        return Response({"status": "Файл успешно переименован."}, status=status.HTTP_200_OK)
+    
+    
+    @action(detail=True, methods=['put', 'patch']) # PATCH тоже удобен для частичного обновления
+    def comment(self, request, pk=None):
+        """
+        Обновляет комментарий к файлу.
+        Ожидает JSON-объект: {"comment": "Новый текст комментария"}
+        """
+        file_obj = self.get_object() # Получаем объект файла
+
+        serializer = CommentSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        new_comment = serializer.validated_data['comment']
+        file_obj.comment = new_comment
+        file_obj.save(update_fields=['comment'])
+
+        return Response({"status": "Комментарий успешно обновлен.", "new_comment": new_comment}, status=status.HTTP_200_OK)
+        
+
+
+class FileDownloadView(APIView):
+    """
+    Эндпоинт для скачивания файла по ID.
+    Доступно только аутентифицированным пользователям.
+    """
+    permission_classes = [drf_permissions.IsAuthenticated]
+
+    def get(self, request, pk, *args, **kwargs):
+        try:
+            # Получаем объект файла из базы данных
+            file_obj = File.objects.get(id=pk)
+
+            # Проверка прав доступа: файл должен принадлежать пользователю ИЛИ быть публичным
+            if not (file_obj.user == request.user or file_obj.public_link is not None):
+                return Response({"detail": "У вас нет прав на скачивание этого файла."}, status=403)
+
+            # Путь к файлу на диске
+            file_path = file_obj.file.path # Используем поле 'file' из модели
+
+            # Проверяем, существует ли файл физически
+            if not os.path.exists(file_path):
+                return Response({"detail": "Файл не найден на сервере."}, status=404)
+
+            # Открываем файл в бинарном режиме
+            wrapper = FileWrapper(open(file_path, 'rb'))
+            # Формируем ответ
+            response = HttpResponse(wrapper, content_type='application/octet-stream')
+            
+            # Заголовок Content-Disposition подсказывает браузеру,
+            # что нужно скачать файл, а не пытаться его открыть.
+            # Имя файла будет взято из поля original_name вашей модели.
+            response['Content-Disposition'] = f'attachment; filename="{file_obj.original_name}"'
+            response['Content-Length'] = os.path.getsize(file_path)
+
+            # Обновляем дату последнего скачивания
+            file_obj.last_download_date = timezone.now()
+            file_obj.save(update_fields=['last_download_date'])
+
+            return response
+
+        except File.DoesNotExist:
+            return Response({"detail": "Файл не найден."}, status=404)    
+
+
+class PublicFileDownloadView(APIView):
+    """
+    Эндпоинт для скачивания файла по публичной ссылке.
+    Доступно всем без аутентификации.
+    """
+    permission_classes = [AllowAny] # Любой может получить доступ к этому view
+
+    def get(self, request, public_link, *args, **kwargs):
+        try:
+            # Ищем файл НЕ ПО ID, А ПО ПОЛЮ 'public_link'
+            file_obj = File.objects.get(public_link = public_link)
+
+            # Проверка: если у файла нет публичной ссылки (хотя мы его нашли по ней),
+            # или поле пустое, возвращаем ошибку 403.
+            if not file_obj.public_link:
+                return Response({"detail": "Доступ к файлу закрыт."}, status=403)
+
+            file_path = file_obj.file.path
+
+            if not os.path.exists(file_path):
+                return Response({"detail": "Файл не найден на сервере."}, status=404)
+
+            wrapper = FileWrapper(open(file_path, 'rb'))
+            response = HttpResponse(wrapper, content_type='application/octet-stream')
+            
+            response['Content-Disposition'] = f'attachment; filename="{file_obj.original_name}"'
+            response['Content-Length'] = os.path.getsize(file_path)
+
+            # Обновляем дату последнего скачивания
+            file_obj.last_download_date = timezone.now()
+            file_obj.save(update_fields=['last_download_date'])
+
+            return response
+
+        except File.DoesNotExist:
+            # Если файл с таким public_link не найден, возвращаем стандартную ошибку 404
+            return Response({"detail": "Файл не найден."}, status=404)
+
 
 # APIView для регистрации (Register)
 class RegisterAPIView(generics.CreateAPIView):
@@ -98,9 +223,7 @@ class RegisterAPIView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
     permission_classes = [AllowAny]
     authentication_classes = (CsrfExemptSessionAuthentication, TokenAuthentication)
-    
-    
-
+ 
 # APIView для входа (Login) - возвращает токен
 # @method_decorator(ensure_csrf_cookie, name='dispatch')
 # @csrf_exempt
@@ -124,23 +247,6 @@ class LoginAPIView(generics.GenericAPIView):
         return Response({'token': token.key}, status=status.HTTP_200_OK)
 
 
-# APIView для выхода (Logout) - удаляет токен.
-# class LogoutAPIView(generics.GenericAPIView):
-    
-#     permission_classes = [drf_permissions.IsAuthenticated] # Доступно только залогиненным
-     
-#     def post(self, request):
-#         try:
-#             # Удаляем токен пользователя (если он существует)
-#             request.user.auth_token.delete()
-#         except (AttributeError, Token.DoesNotExist):
-#             # Обрабатываем случай, когда у пользователя нет токена
-#             pass
-        
-#         # Разлогиниваем из сессии
-#         django_logout(request)
-        
-#         return Response(status=status.HTTP_204_NO_CONTENT)
 class LogoutAPIView(generics.GenericAPIView):
     """
     Эндпоинт для выхода пользователя из системы (удаление токена).

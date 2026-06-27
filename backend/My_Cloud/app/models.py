@@ -86,7 +86,8 @@ class User(AbstractUser):
 
 class File(models.Model):    
    
-    # file = models.FileField(upload_to='uploads/')    
+      
+    file = models.FileField(upload_to='uploads/') # <--- Поле ДОЛЖНО называться 'file'  
 
     # Связь с пользователем-владельцем. При удалении пользователя все его файлы будут удалены.
     user = models.ForeignKey(
