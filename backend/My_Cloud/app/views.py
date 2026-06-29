@@ -22,7 +22,9 @@ from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend # Импорт фильтра
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser 
 from rest_framework.decorators import parser_classes as dec_parser_classes, action
+import logging
 
+logger = logging.getLogger('app')
 
 
 # ViewSet для управления пользователями 
@@ -100,15 +102,23 @@ class FileViewSet(viewsets.ModelViewSet):
         Переименовывает файл.
         Ожидает JSON-объект: {"original_name": "Новое имя файла.txt"}
         """
-        file_obj = self.get_object() # Получаем объект по id (pk)
+        logger.debug("Начало метода rename для файла ID=%s", pk)   
         
-        # Сериализатор для валидации входящих данных
-        new_name_serializer = RenameSerializer(data=request.data)
-        new_name_serializer.is_valid(raise_exception=True)
+        try:
+            file_obj = self.get_object() # Получаем объект по id (pk)
+        
+            # Сериализатор для валидации входящих данных
+            new_name_serializer = RenameSerializer(data=request.data)
+            new_name_serializer.is_valid(raise_exception=True)
 
-        # Обновляем поле original_name
-        file_obj.original_name = new_name_serializer.validated_data['original_name']
-        file_obj.save(update_fields=['original_name'])
+            # Обновляем поле original_name
+            file_obj.original_name = new_name_serializer.validated_data['original_name']
+            file_obj.save(update_fields=['original_name'])
+            
+            logger.info("Файл успешно переименован на %s", file_obj.original_name)
+        
+        except Exception as e:
+            logger.error("Ошибка при переименовании файла: %s", str(e))
 
         return Response({"status": "Файл успешно переименован."}, status=status.HTTP_200_OK)
     
@@ -119,14 +129,21 @@ class FileViewSet(viewsets.ModelViewSet):
         Обновляет комментарий к файлу.
         Ожидает JSON-объект: {"comment": "Новый текст комментария"}
         """
-        file_obj = self.get_object() # Получаем объект файла
+        logger.debug("Начало метода comment для файла ID=%s", pk) 
+        try:
+            file_obj = self.get_object() # Получаем объект файла
 
-        serializer = CommentSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+            serializer = CommentSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
 
-        new_comment = serializer.validated_data['comment']
-        file_obj.comment = new_comment
-        file_obj.save(update_fields=['comment'])
+            new_comment = serializer.validated_data['comment']
+            file_obj.comment = new_comment
+            file_obj.save(update_fields=['comment'])
+            
+            logger.info("Комментарий успешно изменен на %s", file_obj.original_name)
+          
+        except Exception as e:
+            logger.error("Ошибка при комментарии файла: %s", str(e))    
 
         return Response({"status": "Комментарий успешно обновлен.", "new_comment": new_comment}, status=status.HTTP_200_OK)
         

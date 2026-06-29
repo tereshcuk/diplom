@@ -163,22 +163,48 @@ CORS_ALLOWED_ORIGINS = [
 
 LOGGING = {
     'version': 1,
-    'disable_existing_loggers': False,
+    'disable_existing_loggers': False, # Оставляем False, чтобы не сломать логи Django
+
+    # 1. ФОРМАТЫ (Formatters)
     'formatters': {
-        'verbose': {
-            'format': '{asctime} {levelname} {module} {message}',
+        # Простой формат для консоли
+        'console_simple': {
+            'format': '[{asctime}] {levelname} {message}',
             'style': '{',
+            'datefmt': '%Y-%m-%d %H:%M:%S',
+        },
+        # Подробный формат для файлов (если понадобится)
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+            'datefmt': '%Y-%m-%d %H:%M:%S',
         },
     },
+
+    # 2. ОБРАБОТЧИКИ (Handlers) - Куда писать?
     'handlers': {
+        # Обработчик для вывода в консоль
         'console': {
+            'level': 'DEBUG', # будет ловить всё, начиная с DEBUG
             'class': 'logging.StreamHandler',
-            'formatter': 'verbose',
+            'formatter': 'console_simple', # Используем простой формат
         },
     },
-    'root': {
-        'handlers': ['console'],
-        'level': 'DEBUG',
+
+    # 3. ЛОГГЕРЫ (Loggers) - Кто пишет?
+    'loggers': {
+        # Логгер для всего фреймворка Django
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO', # В продакшене обычно INFO, в разработке DEBUG
+            'propagate': True,
+        },
+        # Логгер приложения (app)
+        'app': {
+            'handlers': ['console'],
+            'level': 'DEBUG', # Для своего кода можно оставить DEBUG, чтобы видеть максимум
+            'propagate': True,
+        },
     },
 }
 
