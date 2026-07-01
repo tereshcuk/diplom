@@ -2,63 +2,60 @@ import React from 'react';
 import {
   createBrowserRouter,
   RouterProvider,
+  Navigate,
+  Outlet,
 } from "react-router-dom";
+// --- Import Pages ---
+import HomePage from './components/pages/HomePage';
+import RegisterPage from './components/pages/RegisterPage';
+import LoginPage from './components/pages/LoginPage';
+import AdminUsersPage from './components/pages/AdminUsersPage';
+import FilesPage from './components/pages/FilesPage';
+// --- Import Components ---
+import ProtectedRoute from './components/ProtectedRoute'; // Тот же самый компонент из начала диалога!
+// --- Import Redux ---
+import { Provider } from 'react-redux';
+import { store } from './store/index'; // Импортируем созданный стор
 
-// Импортируем страницы и компоненты
-import Home from './pages/Home';
-import Register from './pages/Register';
-import Login from './pages/Login';
-import AdminUsers from './pages/AdminUsers';
-import Files from './pages/Files';
-import AppLayout from './components/AppLayout';
-
-import { router } from "./router";
-
-
-// Создаем структуру роутов.
-// Обратите внимание на вложенность: /admin/users и /files являются дочерними для пустого пути "".
-// Это позволяет нам применить логику проверки авторизации (в AppLayout) ко всем вложенным путям.
-// const router = createBrowserRouter([
-//   {
-//     path: "/",
-//     element: <Home />,
-//   },
-//   {
-//     path: "/register",
-//     element: <Register />,
-//   },
-//   {
-//     path: "/login",
-//     element: <Login />,
-//   },
-//   {
-//     // Этот маршрут является "родителем" для всех защищенных путей.
-//     // Его элемент - это наш AppLayout, который проверяет авторизацию.
-//     path: "",
-//     element: <AppLayout />,
-//     children: [
-//       {
-//         path: "admin/users",
-//         element: <AdminUsers />,
-//       },
-//       {
-//         path: "files",
-//         element: <Files />,
-//       },
-//       // Можно добавить fallback-роут для несуществующих страниц внутри /app
-//       {
-//         path: "*",
-//         element: <div>Страница не найдена</div>,
-//       },
-//     ],
-//   },
-// ]);
-
-function App() {
+// Компонент ProtectedRoute остается без изменений и работает с токеном из localStorage или стора.
+// Для простоты оставим проверку localStorage.
+const AppRouter = () => {
   return (
-    // <RouterProvider router={router} />
-    <RouterProvider router={router} />
+    <Provider store={store}>
+      <RouterProvider router={router} />
+    </Provider>
   );
+};
+// Конфигурация роутера остается той же, но теперь все страницы будут иметь доступ к Redux через Provider.
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <HomePage />,
+  },
+  {
+    path: "/register",
+    element: <RegisterPage />,
+  },
+  {
+    path: "/login",
+    element: <LoginPage />,
+  },
+  {
+    path: "/app",
+    element: <ProtectedRoute />,
+    children: [
+      {
+        path: "users",
+        element: <AdminUsersPage />,
+      },
+      {
+        path: "files",
+        element: <FilesPage />,
+      },
+    ],
+  },
+]);
+function App() {
+  return <AppRouter />;
 }
-
 export default App;
