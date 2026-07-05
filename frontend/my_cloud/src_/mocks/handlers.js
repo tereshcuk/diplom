@@ -1,4 +1,5 @@
-import { rest } from 'msw';
+// import rest from 'msw';
+import rest from 'msw/node-rest';
 
 // Токен для проверки авторизации в моках
 const VALID_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9';

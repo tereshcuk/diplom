@@ -6,12 +6,12 @@ Content-Type: application/json
 Authorization: Token 4d53c2a6481f51483ba751d694734cc227269068
 
 ###
-get http://127.0.0.1:8000/api/v1/users/7/
+get http://127.0.0.1:8000/api/v1/users/1/
 Content-Type: application/json
 Authorization: Token 70cc3c7f718950ca3138c74d7ec04d2b0bfcce41
 
 ###
-DELETE http://127.0.0.1:8000/api/v1/users/7/
+DELETE http://127.0.0.1:8000/api/v1/users/8/
 Content-Type: application/json
 Authorization: Token 70cc3c7f718950ca3138c74d7ec04d2b0bfcce41
 
@@ -54,7 +54,11 @@ Content-Type: application/json
 ###
 get http://127.0.0.1:8000/api/v1/files/
 Content-Type: application/json
-Authorization: Token 70cc3c7f718950ca3138c74d7ec04d2b0bfcce41
+Authorization: Token 4d53c2a6481f51483ba751d694734cc227269068
+
+###
+curl -X GET "http://127.0.0.1:8000/api/v1/files" \
+-H "Authorization: Token 4d53c2a6481f51483ba751d694734cc227269068"
 
 ###
 get http://127.0.0.1:8000/api/v1/files/?user=9
@@ -62,7 +66,7 @@ Content-Type: application/json
 Authorization: Token 70cc3c7f718950ca3138c74d7ec04d2b0bfcce41
 
 ###
-get http://127.0.0.1:8000/api/v1/files/1/
+get http://127.0.0.1:8000/api/v1/files/3/
 Content-Type: application/json
 Authorization: Token 70cc3c7f718950ca3138c74d7ec04d2b0bfcce41
 

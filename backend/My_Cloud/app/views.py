@@ -45,6 +45,7 @@ class UserViewSet(viewsets.ModelViewSet):
 class FileViewSet(viewsets.ModelViewSet):
     
     queryset = File.objects.all()
+    
     serializer_class = FileSerializer  
     
     parser_classes = [MultiPartParser, FormParser, JSONParser]    
@@ -55,12 +56,22 @@ class FileViewSet(viewsets.ModelViewSet):
         """
         Пользователь видит только свои файлы. Админ видит все.
         """
-        user = self.request.user             
+        logger.debug("Начало метода получения файлов")   
         
-        if user.is_staff:
-            return File.objects.all()
+        try:
+            user = self.request.user  
+                        
+            logger.info("Пользователь определен %s", user)               
         
-        return File.objects.filter(user = user)
+            if user.is_staff:
+                logger.info("Файлы получены")
+                return File.objects.all()
+
+            logger.info("Файлы получены")
+            return File.objects.filter(user = user)
+    
+        except Exception as e:
+            logger.error("Ошибка получения файлов: %s", str(e))
     
     def get_permissions(self):
         """
@@ -250,18 +261,22 @@ class LoginAPIView(generics.GenericAPIView):
     authentication_classes = (CsrfExemptSessionAuthentication, TokenAuthentication)
     serializer_class = LoginSerializer
     
+    
+    
     def post(self, request):
+        
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data['user']
-        
-        # Логин через сессию (если используется SessionAuthentication)
-        django_login(request, user)
+               
+        # # Логин через сессию (если используется SessionAuthentication)
+        # django_login(request, user)
         
         # Получаем или создаем токен для пользователя (Token Authentication)
         token, created = Token.objects.get_or_create(user = user)
-        
+                   
         return Response({'token': token.key}, status=status.HTTP_200_OK)
+       
 
 
 class LogoutAPIView(generics.GenericAPIView):

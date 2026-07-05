@@ -1,0 +1,12 @@
+https://codepen.io/vanillawulf/pen/WbbqroR?editors=1111
+
+https://codepen.io/vanillawulf/pen/oggRLNE
+
+fileRef.current ? fileRef.current.value : '#000000'
+
+https://codepen.io/vanillawulf/pen/xbboZJB
+https://codepen.io/vanillawulf/pen/xbbNOEP
+
+https://codepen.io/vanillawulf/pen/raaEerN?editors=1012
+
+https://learn.javascript.ru/file
