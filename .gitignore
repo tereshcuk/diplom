@@ -1,3 +1,14 @@
 \backend\My_Cloud_old
 \frontend\My_Cloud_old
-
+__pycache__/
+*.pyc
+.env
+venv/
+.vscode/
+.idea/
+node_modules/
+dist/
+.DS_Store
+*.log
+*.sqlite3
+.env
