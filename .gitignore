@@ -11,4 +11,5 @@ dist/
 .DS_Store
 *.log
 *.sqlite3
+db.sqlite3
 .env
