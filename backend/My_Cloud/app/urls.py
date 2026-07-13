@@ -13,6 +13,7 @@ urlpatterns = [
     path('register/', RegisterAPIView.as_view(), name='register'),
     path('login/', LoginAPIView.as_view(), name='login'),
     path('logout/', LogoutAPIView.as_view(), name='logout'),
-    path('files/<int:pk>/download/', FileDownloadView.as_view(), name='file-download'),    
+    path('files/<int:pk>/download/', FileDownloadView.as_view(), name='file-download'),  
+    # path('csrf-cookie/', get_csrf_token, name='get_csrf'),  
     
 ]

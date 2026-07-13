@@ -1,60 +1,80 @@
+// src/components/routes/LoginRoute.jsx
 import React, { useState } from 'react';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { loginSchema } from "../utils/validationSchemas";
-import { login as authServiceLogin } from "../../services/authService"; // Импортируем сервис
+import { login as authServiceLogin } from "../../services/authService";
+
+import { useNavigate } from 'react-router-dom';
+// Удалили useDispatch и import loadProfile
+
+// Импортируем обычный сервис для получения профиля (не thunk!)
+import { fetchUserProfile } from '../../services/userService';
 
 export const LoginRoute = () => {
-// export const LoginRoute = ({ onSuccess }) => {
-    
+    const navigate = useNavigate();
 
-    const [loading, setLoading] = useState(false);
-    const [apiError, setApiError] = useState(null); // Ошибка от сервера (неверный пароль и т.д.)
+    const [apiError, setApiError] = useState(null);
 
     const {
         register,
         handleSubmit,
-        reset, // Для очистки формы после успеха
-        formState: { errors, isSubmitting }, // isSubmitting блокирует кнопку во время RHF-валидации
+        reset,
+        formState: { errors, isSubmitting },
     } = useForm({
         resolver: zodResolver(loginSchema),
+        defaultValues: { username: '', password: '' }
     });
 
     const submitHandler = async (data) => {
-        setLoading(true);
         setApiError(null);
 
-        console.log('Вызвали submitHandler', data);
-
         try {
-            // Вызываем наш сервис
-            const result = await authServiceLogin(data);
+            // 1. Авторизация (устанавливает куку сессии)
+            await authServiceLogin(data);
 
-            // --- ВАЖНО: Сохранение токена ---            
-            localStorage.setItem('token', result.token);
+            console.log('Авторизация успешна, кука установлена.');
 
-            // Сброс формы
-            reset();
+            // 2. ЗАГРУЗКА ПРОФИЛЯ БЕЗ THUNK (ПРЯМОЙ ВЫЗОВ API)
+            // Вызываем функцию сервиса напрямую
+            const response = await fetchUserProfile();
 
-            // Если родительский компонент передавал колбэк (например, для закрытия модалки)
-            // if (onSuccess) {
-            //     onSuccess(result);
-            // } else {
-            //     // Иначе просто редирект на главную или защищенную страницу
-            //     window.location.href = "/";
-            // }
+            // Здесь логика зависит от того, как вы храните данные в Header.
+            // Если у вас нет Redux, но есть Context или просто рендер по факту:
+            // Мы предполагаем, что ваш <Header /> сам подписан на состояние через свои хуки,
+            // либо вы используете глобальный window-событие. 
+            // Но чаще всего без Thunk это выглядит так:
+
+            // ПРИМЕР: Если профиль нужен только здесь и сейчас (без сохранения в Store):
+            // localStorage.setItem('currentUser', JSON.stringify(response.data)); 
+
+            console.log('Профиль загружен:', response.data);
+
+            // 3. Очистка формы
+            reset({ username: '', password: '' });
+
+            // 4. Редирект
+            navigate("/app/profiles", { replace: true });
 
         } catch (error) {
             console.error("Ошибка входа:", error);
-            setApiError(error.message); // Покажем пользователю красную плашку
-        } finally {
-            setLoading(false);
+
+            if (error.response?.status === 400 || error.response?.status === 401) {
+                setApiError(error.response.data.detail || 'Неверный логин или пароль.');
+            } else if (error.message.includes('fetchUserProfile')) {
+                // Важно: сервер отдал сессию, но бэкенд не дает /me/
+                setApiError('Вход выполнен, но данные профиля недоступны.');
+            } else if (!error.response) {
+                setApiError('Нет связи с сервером.');
+            } else {
+                setApiError('Произошла ошибка.');
+            }
         }
     };
 
     return (
         <div className='loginform'>
-            {/* Отображение ошибки запроса к API */}
+            {/* Отображение ошибки */}
             {apiError && (
                 <div style={{ color: 'red', marginBottom: '15px' }}>
                     {apiError}
@@ -74,8 +94,8 @@ export const LoginRoute = () => {
                     {errors.password && <p style={{ color: 'red' }}>{errors.password.message}</p>}
                 </div>
 
-                <button type="submit" disabled={isSubmitting || loading}>
-                    {(isSubmitting || loading) ? 'Входим...' : 'Войти'}
+                <button type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? 'Входим...' : 'Войти'}
                 </button>
             </form>
         </div>

@@ -1,3 +1,5 @@
+// authService.js
+
 import axios from 'axios';
 import { API_URL } from '../config/api_urls'
 
@@ -12,14 +14,25 @@ export const login = async (credentials) => {
                 headers: {
                     'Content-Type': 'application/json',
                 },
+                withCredentials: true 
             }
         );
 
         // Возвращаем данные из ответа (обычно там токен)        
         return response.data;
     } catch (error) {
-        // Извлекаем сообщение об ошибке от сервера или текст ошибки
-        const errorMessage = error.response?.data?.detail || error.message;
-        throw new Error(errorMessage);
+        // // Извлекаем сообщение об ошибке от сервера или текст ошибки
+        // const errorMessage = error.response?.data?.detail || error.message;
+        // throw new Error(errorMessage);
+        if (error.response) {
+            // Сервер вернул ошибку (например, 400 Bad Request)
+            throw new Error(error.response.data.detail || 'Ошибка входа');
+        } else if (error.request) {
+            // Запрос был отправлен, но ответа не было
+            throw new Error('Нет ответа от сервера.');
+        } else {
+            // Что-то сломалось в самом клиенте
+            throw new Error(error.message);
+        }
     }
 };

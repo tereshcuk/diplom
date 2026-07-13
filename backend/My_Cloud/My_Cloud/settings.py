@@ -1,7 +1,7 @@
 from pathlib import Path
 import os
 from dotenv import load_dotenv
-# from app.models import User
+
 
 # Загружаем переменные из файла .env в окружение ОС
 load_dotenv()
@@ -20,9 +20,17 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECRET_KEY = 'django-insecure-hf_eyc*_*9gg2&34f9m^o@#5i+db3&p14sy87!4r9n--m0n#y4'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = True # - в продакшене должно быть False
 
-ALLOWED_HOSTS = []
+# ALLOWED_HOSTS = ['https://www.reg.ru/',
+#                  ]
+
+ALLOWED_HOSTS = [
+    'reg.ru', 
+    'www.reg.ru', 
+    "localhost", 
+    "127.0.0.1",
+    ]
 
 
 # Application definition
@@ -33,21 +41,24 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'app',
+    'django.contrib.staticfiles',    
     'rest_framework',    
-    'rest_framework.authtoken',
+    # 'rest_framework.authtoken',
+    'corsheaders',
+    'app',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware', 
     'django.contrib.sessions.middleware.SessionMiddleware',
+    
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'corsheaders.middleware.CorsMiddleware',    
+       
 ]
 
 ROOT_URLCONF = 'My_Cloud.urls'
@@ -137,10 +148,11 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        # 'rest_framework.authentication.SessionAuthentication',
-        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+        # 'rest_framework.authentication.TokenAuthentication',
     ],
     
     'DEFAULT_PERMISSION_CLASSES': [
@@ -160,10 +172,36 @@ REST_FRAMEWORK = {
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",  # Укажите адрес вашего фронтенда
-    "http://localhost:5173",
+    "http://localhost:5173", 
+    "http://127.0.0.1:5173",
+    'https://www.reg.ru',
 ]
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000", 
+    "http://127.0.0.1:3000", 
+    "http://localhost:5173", 
+    "http://127.0.0.1:5173",
+    ] # Адрес вашего фронтенда
+
+
+CORS_ALLOW_CREDENTIALS = True
+# SESSION_COOKIE_SAMESITE = 'None' # Или 'None' если фронт и бэк на разных портах/девайсах
+# CSRF_COOKIE_SAMESITE = 'Lax'
+# Опционально: если вы хотите разрешить ВСЕ методы/заголовки
+CORS_ALLOW_ALL_HEADERS = True 
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+
 
 LOGGING = {
     'version': 1,

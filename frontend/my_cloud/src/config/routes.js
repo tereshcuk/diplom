@@ -9,3 +9,4 @@ export const FILE_ROUTE = ":id";
 export const PROTECTED_ROUTE = "/app";
 export const ADMIN_ROUTE = "/admin";
 export const fileRoute = (id) => FILES_ROUTE + `/${id}`;
+export const PROFILE_ROUTE = "/profile";

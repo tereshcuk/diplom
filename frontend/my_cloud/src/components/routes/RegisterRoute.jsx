@@ -7,7 +7,8 @@ export const RegisterRoute = ({ onSubmit }) => {
     const {
         register,
         handleSubmit,
-        formState: { errors }
+        reset,
+        formState: { errors, isSubmitting }
     } = useForm({
         resolver: zodResolver(registerSchema),
     });
@@ -45,7 +46,13 @@ export const RegisterRoute = ({ onSubmit }) => {
                 {errors.confirmPassword && <p style={{ color: 'red' }}>{errors.confirmPassword.message}</p>}
             </div>
 
-            <button type="submit">Зарегистрироваться</button>
+            
+            <button
+                type="submit"
+                disabled={isSubmitting} // Блокируем кнопку во время запроса
+            >
+                {isSubmitting ? 'Регистрация...' : 'Зарегистрироваться'}
+            </button>
         </form>
     );
 };

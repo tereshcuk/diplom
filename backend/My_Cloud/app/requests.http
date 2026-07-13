@@ -1,51 +1,62 @@
+@baseUrl = http://127.0.0.1:8000/api/v1
+@username = test6
+@password = A2345!
+
+### Вход в систему (получаем sessionid куку)
+POST {{baseUrl}}/login/
+Content-Type: application/json
+{
+    "username": "{{username}}",
+    "password": "{{password}}"
+}
 
 # Пользователи
-
-get http://127.0.0.1:8000/api/v1/users/
+###
+get http://127.0.0.1:8000/api/v1/users/16/
 Content-Type: application/json
-Authorization: Token 4d53c2a6481f51483ba751d694734cc227269068
+# Authorization: Token 4d53c2a6481f51483ba751d694734cc227269068
 
 ###
 get http://127.0.0.1:8000/api/v1/users/1/
 Content-Type: application/json
-Authorization: Token 70cc3c7f718950ca3138c74d7ec04d2b0bfcce41
+# Authorization: Token 70cc3c7f718950ca3138c74d7ec04d2b0bfcce41
 
 ###
-DELETE http://127.0.0.1:8000/api/v1/users/8/
+DELETE http://127.0.0.1:8000/api/v1/users/9/
 Content-Type: application/json
-Authorization: Token 70cc3c7f718950ca3138c74d7ec04d2b0bfcce41
+# Authorization: Token 70cc3c7f718950ca3138c74d7ec04d2b0bfcce41
 
 
 ###
 get http://127.0.0.1:8000/api/v1/files/
 Content-Type: application/json
-Authorization: Token 70cc3c7f718950ca3138c74d7ec04d2b0bfcce41
+# Authorization: Token 70cc3c7f718950ca3138c74d7ec04d2b0bfcce41
 
 ###
 post http://127.0.0.1:8000/api/v1/login/
 Content-Type: application/json
 
 {
-    "username": "test3",
-    "password": "123456"
+    "username": "test6",
+    "password": "A2345!"
 }
 
 ###
 post http://127.0.0.1:8000/api/v1/logout/
-Authorization: Token ad7e398ef72fe7e6f0d6de41fbe595a8ad07da64
-credentials: "include" 
+# X-CSRFToken: {csrf_token}
+# Authorization: Token ad7e398ef72fe7e6f0d6de41fbe595a8ad07da64
+# credentials: "include" 
 
 ###
 post http://127.0.0.1:8000/api/v1/register/
 Content-Type: application/json
 
 {
-    "username": "test3",
-    "email": "test3@yandex.ru",
-    "password": "123456",
-    "full_name": "Тест3",
-    "is_admin": false,
-    "storage_path": "/test3/"
+    "username": "test8",
+    "email": "test8@yandex.ru",
+    "password": "A2345!",
+    "full_name": "Тест8",
+    "is_admin": false
 }
 
 
@@ -54,26 +65,26 @@ Content-Type: application/json
 ###
 get http://127.0.0.1:8000/api/v1/files/
 Content-Type: application/json
-Authorization: Token 4d53c2a6481f51483ba751d694734cc227269068
+# Authorization: Token 4d53c2a6481f51483ba751d694734cc227269068
 
 ###
 curl -X GET "http://127.0.0.1:8000/api/v1/files" \
 -H "Authorization: Token 4d53c2a6481f51483ba751d694734cc227269068"
 
 ###
-get http://127.0.0.1:8000/api/v1/files/?user=9
+get http://127.0.0.1:8000/api/v1/files/?user=16
 Content-Type: application/json
-Authorization: Token 70cc3c7f718950ca3138c74d7ec04d2b0bfcce41
+# Authorization: Token 70cc3c7f718950ca3138c74d7ec04d2b0bfcce41
 
 ###
-get http://127.0.0.1:8000/api/v1/files/3/
+get http://127.0.0.1:8000/api/v1/files/16/
 Content-Type: application/json
-Authorization: Token 70cc3c7f718950ca3138c74d7ec04d2b0bfcce41
+# Authorization: Token 70cc3c7f718950ca3138c74d7ec04d2b0bfcce41
 
 ###
 get http://127.0.0.1:8000/api/v1/files/get_file_path/
 Content-Type: application/json
-Authorization: Token 4d53c2a6481f51483ba751d694734cc227269068
+# Authorization: Token 4d53c2a6481f51483ba751d694734cc227269068
 
 
 #Загрузить файл
@@ -98,7 +109,7 @@ curl -X DELETE http://127.0.0.1:8000/api/v1/files/2/ \
 ###
 put http://127.0.0.1:8000/api/v1/files/2/rename/
 Content-Type: application/json
-Authorization: Token 70cc3c7f718950ca3138c74d7ec04d2b0bfcce41 
+# Authorization: Token 70cc3c7f718950ca3138c74d7ec04d2b0bfcce41 
 
 {
     "original_name": "Мой отчет.pdf"
@@ -114,9 +125,9 @@ curl -X PUT http://127.0.0.1:8000/api/v1/files/2/rename/ \
 
 # Добавление комментария
 ###
-put http://127.0.0.1:8000/api/v1/files/2/comment/
+put http://127.0.0.1:8000/api/v1/files/6/comment/
 Content-Type: application/json
-Authorization: Token 70cc3c7f718950ca3138c74d7ec04d2b0bfcce41 
+Authorization: Token 61fb4a3a5a4655a9eb343219475b34805f365716 
 
 {
     "comment": "Мой отчет.pdf - Это супер"
@@ -132,5 +143,5 @@ Authorization: Token 4d53c2a6481f51483ba751d694734cc227269068
 
 # Скачать файл по публичной ссылке
 ###
-GET http://127.0.0.1:8000/files/8b40df5e-1539-42fb-94d8-85c5f444bf98/
+GET http://127.0.0.1:8000/files/c66517bb-9cee-4f22-992e-71d7ff0c5dbb/
 Content-Type: application/json

@@ -4,12 +4,12 @@ import { LOGIN_ROUTE } from '../../config/routes';
 import { useLoaderData } from "react-router";
 
 export const FilesRoute = () => {
-    const isAuthenticated = !!localStorage.getItem('token');
+    // const isAuthenticated = !!localStorage.getItem('token');
     // console.log(' FilesRoute token: ', localStorage.getItem('token'));   
     const files = useLoaderData(); 
-    if (!isAuthenticated) {        
-        return <Navigate to={LOGIN_ROUTE} replace />;
-    }
+    // if (!isAuthenticated) {        
+    //     return <Navigate to={LOGIN_ROUTE} replace />;
+    // }
     return (
         <div className='prevContainer'>
             <h1 className='text'>Список файлов</h1>

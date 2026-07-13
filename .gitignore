@@ -1,5 +1,5 @@
-\backend\My_Cloud_old
-\frontend\My_Cloud_old
+backend\My_Cloud_old
+frontend\My_Cloud_old
 __pycache__/
 *.pyc
 .env
@@ -13,3 +13,6 @@ dist/
 *.sqlite3
 db.sqlite3
 .env
+users/
+uploads/
+media_content/

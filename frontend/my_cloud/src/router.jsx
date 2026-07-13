@@ -1,22 +1,19 @@
+// src/config/router.js
+
 import { createBrowserRouter } from 'react-router';
 
+// Импорты компонентов страниц
 import { HomeRoute } from './components/routes/HomeRoute';
 import { ContactsRoute } from './components/routes/ContactsRoute';
-
 import { MainTemplate } from './components/layout/MainTemplate';
 import { NotFound } from './components/routes/NotFound';
-
 import { FilesRoute } from './components/routes/FilesRoute';
 import { FileDetailsRoute } from './components/routes/FileDetailsRoute';
-
 import { LoginRoute } from './components/routes/LoginRoute';
 import { RegisterRoute } from './components/routes/RegisterRoute';
 import { AdminUsersRoute } from './components/routes/AdminUsersRoute';
 import { UserProfileRouter } from './components/routes/UserProfileRouter';
 import ProtectedRoute from './components/routes/ProtectedRoute';
-import { fetchUserProfile } from './services/userService';
-import { getFilesList, getFileById } from './services/api';
-
 
 import * as R from './config/routes';
 
@@ -25,6 +22,7 @@ export const router = createBrowserRouter([
         path: '/',
         element: <MainTemplate />,
         children: [
+            // --- Публичные страницы ---
             {
                 path: R.HOME_ROUTE,
                 index: true,
@@ -34,12 +32,10 @@ export const router = createBrowserRouter([
                 path: R.CONTACTS_ROUTE,
                 element: <ContactsRoute />,
             },
-
             {
                 path: R.LOGIN_ROUTE,
                 element: <LoginRoute />,
             },
-
             {
                 path: R.REGISTER_ROUTE,
                 element: <RegisterRoute />,
@@ -49,76 +45,40 @@ export const router = createBrowserRouter([
                 element: <AdminUsersRoute />,
             },
 
-            // {
-            //     path: R.PROTECTED_ROUTE,
-            //     element: <ProtectedRoute />,
-            //     children: [                    
-            //         {
-            //             path: R.FILES_ROUTE,
-            //             element: <FilesRoute />,
-            //                 children: [
-            //                     {
-            //                         index: true,
-            //                         element: <FilesRoute />,
-            //                     },
-            //                     {
-            //                         path: R.FILE_ROUTE,
-            //                         element: <FileDetailsRoute />,
-            //                     },
-            //                 ],
-            //         },
-            //     ],
-            // },
-
+            // --- Защищенный раздел приложения ---
             {
-                path: R.FILES_ROUTE,
+                // Проверка авторизации происходит ДО рендера дочерних элементов
+                element: <ProtectedRoute />,
                 children: [
                     {
-                        index: true,
-                        element: <FilesRoute />,
-                        loader: async () => {
-                            try {
-                                const response = await getFilesList();
-                                return response.data;
-                            } catch (err) {
-                                throw new Response("Ошибка загрузки файлов", { status: 500 });
-                            }
-                        },
-
-                    }
-                    ,
-                    {
-                        path: R.FILE_ROUTE,
-                        element: <FileDetailsRoute />,
-                        loader: async ({ params }) => {
-                            try {
-                                // console.info(`params.id: ${params.id}`);
-                                const response = await getFileById(params.id);
-                                console.info(`response: ${response}`)
-                                return response;
-                            } catch (err) {
-                                throw new Response("Ошибка получения информации о файле", err);
-                            }
-                        },
+                        path: R.PROFILE_ROUTE, // e.g., "/app/profile"
+                        element: <UserProfileRouter />,
+                        // loader УДАЛЕН! Загрузка данных теперь внутри useEffect самого компонента Profile
                     },
-                ],
+                    {
+                        path: R.FILES_ROUTE, // e.g., "/app/files"
+                        element: <FilesRoute />,
+                        // loader для списка файлов УДАЛЕН!
+                        children: [
+                            {
+                                index: true,
+                                // Внимание: Если FilesRoute отображает список, он должен быть здесь как Index Route
+                                // или логика загрузки должна быть в самом FilesRoute
+                                element: null
+                            },
+                            {
+                                path: R.FILE_ROUTE, // e.g., "/app/files/:id"
+                                element: <FileDetailsRoute />,
+                                // loader для деталей файла УДАЛЕН!
+                            },
+                        ]
+                    },
+                ]
             },
 
+            // Catch-all route (Страница 404)
             {
-                path: "/app/profile",
-                element: <UserProfileRouter />,
-                loader: async ({ request }) => {
-                    try {
-                        const data = await fetchUserProfile();
-                        return data;
-                    } catch (error) {
-                        throw new Response("Неавторизован", { status: 401 });
-                    }
-                },
-            },
-
-            {
-                path: R.NOT_FOUND_ROUTE,
+                path: "*",
                 element: <NotFound />,
             },
         ],

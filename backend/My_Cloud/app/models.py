@@ -4,8 +4,20 @@ from django.core.validators import RegexValidator
 import uuid
 from django.conf import settings
 from django.utils import timezone
+import os
+import logging
 
-# Create your models here.
+
+logger = logging.getLogger('app')
+
+def user_directory_path(instance, filename):
+    
+    ext = filename.split('.')[-1]
+    # Создаем уникальное имя файла, сохраняя расширение
+    unique_filename = f"{uuid.uuid4()}.{ext}"
+    return f'users/{instance.user.id}/{unique_filename}'
+
+
 
 class User(AbstractUser):
     
@@ -77,6 +89,62 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.username
+    
+    # def save(self, *args, **kwargs):
+    #     is_new_user = not self.pk  # Проверяем, создается ли пользователь впервые
+
+    #     super().save(*args, **kwargs)
+
+    #     # Если пользователь только что создан — создаем его личную папку
+    #     if is_new_user:
+    #         # Формируем безопасный путь (например, D:/media/users/1/)
+    #         path = os.path.join(settings.MEDIA_ROOT, 'users', str(self.id))
+    #         try:
+    #             os.makedirs(path, exist_ok=True)
+    #             # Обновляем поле storage_path в базе данных
+    #             self.storage_path = path.replace(settings.MEDIA_ROOT, '').lstrip('/')
+    #             # Важно: вызываем save снова, но уже без триггера создания папки
+    #             super().save(update_fields=['storage_path'])
+    #         except OSError as e:
+    #             # Логируем ошибку, если папку создать не удалось
+    #             print(f"Ошибка создания директории {path}: {e}")
+    def save(self, *args, **kwargs):
+        
+        
+        is_new_user = self.pk is None  # Проверяем создание нового объекта по pk
+
+        super().save(*args, **kwargs)
+
+        if is_new_user and not self.storage_path:
+            # Формируем относительный путь от MEDIA_ROOT строго как строку
+            relative_path = os.path.join('users', str(self.id))
+            
+            # Полный абсолютный путь на диске сервера для создания папки
+            absolute_path = os.path.join(settings.MEDIA_ROOT, relative_path)
+            logger.debug("Создаем директорию save user")
+            try:
+                
+                logger.info("директория: %s", absolute_path)
+                # Создаем директорию рекурсивно, если её нет
+                os.makedirs(absolute_path, exist_ok=True)
+                
+                # Сохраняем в БД только ОТНОСИТЕЛЬНЫЙ путь (без MEDIA_ROOT)
+                # Это критически важно для корректной работы FileField                
+                self.storage_path = relative_path.replace('\\', '/') # Приводим слэши к единому виду
+                logger.info("Сохраняем в БД только ОТНОСИТЕЛЬНЫЙ путь: %s", self.storage_path)
+                
+                # Вызываем родительский save снова, но ТОЛЬКО для обновления storage_path,
+                # чтобы избежать бесконечного цикла вызовов save()
+                super().save(update_fields=['storage_path'])
+                
+            except OSError as e:
+                # Если папку создать не удалось, выводим ошибку в консоль 
+                # (в реальном проекте лучше использовать logging.error())
+                # print(f"Ошибка создания директории пользователя {absolute_path}: {e}")
+                # raise ValidationError({'detail': f'Не удалось создать хранилище пользователя: {str(e)}'})
+                logger.error(f"Ошибка создания директории пользователя {absolute_path}: {e}", str(e))
+                logger.error({'detail': f'Не удалось создать хранилище пользователя: {str(e)}'}, str(e))
+
 
     class Meta:
         verbose_name = 'Пользователь'
@@ -87,7 +155,11 @@ class User(AbstractUser):
 class File(models.Model):    
    
       
-    file = models.FileField(upload_to='uploads/') # <--- Поле ДОЛЖНО называться 'file'  
+    # file = models.FileField(upload_to='uploads/') # <--- Поле ДОЛЖНО называться 'file'
+    file = models.FileField(
+        upload_to=user_directory_path,
+        verbose_name='Файл'
+    )  
 
     # Связь с пользователем-владельцем. При удалении пользователя все его файлы будут удалены.
     user = models.ForeignKey(
@@ -97,6 +169,7 @@ class File(models.Model):
         related_name='files',
         help_text='Пользователь, которому принадлежит этот файл',
     )
+        
 
     # Оригинальное имя файла, с которым он был загружен
     original_name = models.CharField(
@@ -157,6 +230,20 @@ class File(models.Model):
         unique=True,
         help_text='Уникальная ссылка для скачивания файла',
     )
+
+    def save(self, *args, **kwargs):
+        # Автоматическое заполнение полей при сохранении объекта
+        if self.file and not self.unique_name:
+            self.original_name = os.path.basename(self.file.name)
+            # Извлекаем системное имя файла из полного пути storage
+            self.unique_name = os.path.basename(self.file.name)
+        
+        if self.file:
+            self.file_size = self.file.size
+            # Сохраняем относительный путь от MEDIA_ROOT
+            self.file_path = self.file.name
+            
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f'Файл: {self.original_name} пользователя: {self.user.username}'

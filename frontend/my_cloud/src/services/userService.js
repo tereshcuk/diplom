@@ -1,8 +1,18 @@
-import { api } from './api'; // Ваш axios с интерцептором из прошлого шага
+// src/services/userService.js
+import { api, getUserProfile } from './api'; // Ваш axios с интерцептором из прошлого шага
 
 export const fetchUserProfile = async () => {
-    const response = await api.get('/users/me');
-    // Рекомендуется использовать /users/me вместо конкретного ID (1), 
-    // чтобы сервер сам понимал, кто вошел по токену.
-    return response.data;
+    try {
+        // const response = await api.get('/users/me/');
+        console.log('userService: ');
+        const response = await getUserProfile();
+
+        // Возвращаем чистые данные для react-router loader
+        return response.data;
+    } catch (error) {
+        // Если сервер вернул 401 (неавторизован), пробрасываем ошибку выше
+        // чтобы router сделал редирект на /login
+        console.log('userService ошибка:  ', error);
+        throw error;
+    }
 };
