@@ -27,8 +27,3 @@ export const getFilesList = async () => await api.get('/files/');
 
 export const getFileById = async (fileId) => await api.get(`/files/${fileId}/`);
 
-// export const getFileById = async (fileId) => {
-//     // Используем шаблонную строку для подстановки ID в URL
-//     const response = await api.get(`/files/${fileId}/`);
-//     return response.data;
-// };

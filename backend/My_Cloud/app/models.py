@@ -89,25 +89,7 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.username
-    
-    # def save(self, *args, **kwargs):
-    #     is_new_user = not self.pk  # Проверяем, создается ли пользователь впервые
-
-    #     super().save(*args, **kwargs)
-
-    #     # Если пользователь только что создан — создаем его личную папку
-    #     if is_new_user:
-    #         # Формируем безопасный путь (например, D:/media/users/1/)
-    #         path = os.path.join(settings.MEDIA_ROOT, 'users', str(self.id))
-    #         try:
-    #             os.makedirs(path, exist_ok=True)
-    #             # Обновляем поле storage_path в базе данных
-    #             self.storage_path = path.replace(settings.MEDIA_ROOT, '').lstrip('/')
-    #             # Важно: вызываем save снова, но уже без триггера создания папки
-    #             super().save(update_fields=['storage_path'])
-    #         except OSError as e:
-    #             # Логируем ошибку, если папку создать не удалось
-    #             print(f"Ошибка создания директории {path}: {e}")
+        
     def save(self, *args, **kwargs):
         
         
@@ -116,32 +98,24 @@ class User(AbstractUser):
         super().save(*args, **kwargs)
 
         if is_new_user and not self.storage_path:
-            # Формируем относительный путь от MEDIA_ROOT строго как строку
-            relative_path = os.path.join('users', str(self.id))
             
-            # Полный абсолютный путь на диске сервера для создания папки
+            relative_path = os.path.join('users', str(self.id))
+                        
             absolute_path = os.path.join(settings.MEDIA_ROOT, relative_path)
             logger.debug("Создаем директорию save user")
             try:
                 
                 logger.info("директория: %s", absolute_path)
-                # Создаем директорию рекурсивно, если её нет
-                os.makedirs(absolute_path, exist_ok=True)
                 
-                # Сохраняем в БД только ОТНОСИТЕЛЬНЫЙ путь (без MEDIA_ROOT)
-                # Это критически важно для корректной работы FileField                
+                os.makedirs(absolute_path, exist_ok=True)
+                                                
                 self.storage_path = relative_path.replace('\\', '/') # Приводим слэши к единому виду
                 logger.info("Сохраняем в БД только ОТНОСИТЕЛЬНЫЙ путь: %s", self.storage_path)
-                
-                # Вызываем родительский save снова, но ТОЛЬКО для обновления storage_path,
-                # чтобы избежать бесконечного цикла вызовов save()
+                                
                 super().save(update_fields=['storage_path'])
                 
             except OSError as e:
-                # Если папку создать не удалось, выводим ошибку в консоль 
-                # (в реальном проекте лучше использовать logging.error())
-                # print(f"Ошибка создания директории пользователя {absolute_path}: {e}")
-                # raise ValidationError({'detail': f'Не удалось создать хранилище пользователя: {str(e)}'})
+                
                 logger.error(f"Ошибка создания директории пользователя {absolute_path}: {e}", str(e))
                 logger.error({'detail': f'Не удалось создать хранилище пользователя: {str(e)}'}, str(e))
 

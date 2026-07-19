@@ -22,14 +22,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True # - в продакшене должно быть False
 
-# ALLOWED_HOSTS = ['https://www.reg.ru/',
-#                  ]
-
 ALLOWED_HOSTS = [
     'reg.ru', 
     'www.reg.ru', 
     "localhost", 
     "127.0.0.1",
+    "194.67.100.227",
     ]
 
 
@@ -68,7 +66,9 @@ AUTH_USER_MODEL = 'app.User'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        # ДОБАВЬТЕ ЭТУ СТРОКУ:
+        'DIRS': [os.path.join(BASE_DIR, 'templates'), 
+                 '/home/nickolai/diplom/backend/My_Cloud/env/lib/python3.14/site-packages/django_filters/templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -79,6 +79,8 @@ TEMPLATES = [
         },
     },
 ]
+
+
 
 WSGI_APPLICATION = 'My_Cloud.wsgi.application'
 
