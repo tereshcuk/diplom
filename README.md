@@ -165,45 +165,116 @@ npm start
 		
 	5. Воздать пользователя с админ правами
 		python manage.py createadmin
+
+5. Зайдите в папку frontend, установите зависимости и соберите production-версию
+   1. sudo apt install npm
+   2. npm install
+   3. npm run build
+	
 		
 		
-5. Запустить сервер
+6. Настрока gunicorn:
 	
 	1. gunicorn My_Cloud.wsgi:application --bind 0.0.0.0:8000
 	
 	2. Настрока gunicorn: 
 		1. Сделать сервис:
 				sudo nano /etc/systemd/system/gunicorn.service
-			Пример: 	
+			Пример: 				
 			[Unit]
 				Description=gunicorn daemon for My_Cloud
 				After=network.target
 
 			[Service]
-				User=nickolai
-				Group=www-data
 
-				WorkingDirectory=/home/nickolai/diplom/backend/My_Cloud
+			User=nickolai
+			Group=www-data
 
-				ExecStart=/home/nickolai/diplom/backend/My_Cloud/env/bin/gunicorn \
-				--access-logfile - \
-				--workers 3 \
-				--bind unix:/home/nickolai/diplom/backend/My_Cloud/my_cloud.sock \
-				My_Cloud.wsgi:application
+			WorkingDirectory=/home/nickolai/diplom/backend/My_Cloud
 
-				# Перезапуск службы при падении
-				Restart=always
-				RestartSec=5s
+			ExecStart=/home/nickolai/diplom/backend/My_Cloud/env/bin/gunicorn \
+    		--access-logfile - \
+    		--workers 3 \
+    		# Переносим сокет в /run/, который очищается при перезагрузке сервера
+    		--bind unix:/run/gunicorn/my_cloud.sock \
+    		My_Cloud.wsgi:application
+
+			# Автоматическое управление правами на runtime-директорию
+			UMask=0007
+			RuntimeDirectory=gunicorn
+			RuntimeDirectoryMode=0770
+
+			# Перезапуск службы при падении
+			Restart=always
+			RestartSec=3s
+			TimeoutStopSec=20s
+
+			StandardOutput=append:/var/log/gunicorn/access.log
+			StandardError=append:/var/log/gunicorn/error.log
 
 			[Install]
-				WantedBy=multi-user.target
-  
-			
-	3. Настроить файл конфигурации web servera	
-			sudo nano /etc/nginx/sites-available/My_Cloud
+			WantedBy=multi-user.target
 
 
-    4. Для запуска: 
+   
+    3. Для запуска: 
 				sudo systemctl start gunicorn
 				sudo systemctl enable gunicorn
-				sudo systemctl status gunicorn        
+				sudo systemctl status gunicorn 			
+  
+			
+
+7. Настроить файл конфигурации web servera	
+			
+	1. Создать папку: sudo mkdir -p /var/www/my_app
+	2. Копируем собранный ранее фронт: sudo cp -r /home/nickolai/diplom/frontend/my_cloud/dist/* /var/www/my_app/ 
+	3. Настроить 
+      	1. sudo nano /etc/nginx/sites-available/My_Cloud
+           Пример: 
+   			server {
+    				listen 80;
+    				server_name 194.67.100.227;
+
+    				# --- НАСТРОЙКА FRONTEND ---
+    				# Корневая директория, куда мы скопировали папку dist/build
+    				root /var/www/my_app;
+    
+    				index index.html;
+
+    				location = /favicon.ico { access_log off; log_not_found off; }
+  				
+
+					location @fallback {
+						# Для SPA-роутинга всегда возвращаем главный файл фронтенда
+						root /var/www/my_app;
+						rewrite ^ /index.html break;
+					}
+
+					# --- НАСТРОЙКА BACKEND (API) ---
+					# Все запросы, начинающиеся с /api/, направляем на Gunicorn
+					location /api/ {
+						proxy_pass http://unix:/home/nickolai/diplom/backend/My_Cloud/my_cloud.sock;
+						include proxy_params;
+						
+						# Важные заголовки для корректной работы Django
+						proxy_set_header Host $host;
+						proxy_set_header X-Real-IP $remote_addr;
+						proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+						proxy_set_header X-Forwarded-Proto $scheme;
+					}
+
+					# Отдельная отдача медиафайлов Django (если они грузятся пользователем)
+					location /media/ {
+						alias /home/nickolai/diplom/backend/media/;
+					}
+
+					# Основной блок обработки запросов
+    				location / {
+        				# Сначала пытаемся найти файл как есть (статику: .js, .css, картинки)
+        				try_files $uri $uri/;
+        
+						# Если файл не найден (пользователь обновил страницу внутри вложенного 
+						# маршрута типа /profile/settings), отдаем index.html фронтенда
+						error_page 404 = @fallback;
+					}
+				}
